@@ -37,7 +37,7 @@
 // ==========================================
 // !!! CHANGE THIS FOR EACH MODULE TODAY !!!
 // This is burned into EEPROM on first boot if no saved ID exists.
-const uint8_t HARDCODED_ID = 38;
+const uint8_t HARDCODED_ID = 01;
 
 // The ordered set of 64 characters this reel can display.
 // Position 0 = blank space (the "home" flap).
