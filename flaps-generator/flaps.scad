@@ -12,8 +12,11 @@ blackmargin = 3;
 
 // USE [F6] to render the flaps
 
-// Make the individual color layer
+// Make all flaps for an individual color layer
 //MakeFlaps(0);
+
+// Make a single flap for an individual color layer
+//MakeSingleFlap(12,0); // Flap Number, Color Layer
 
 // Show Preview of all the flaps - NOT FOR PRINTING
 PreviewFlaps();
@@ -52,11 +55,8 @@ module PreviewFlaps(){
     
 }
 
-module MakeFlaps(part){
-    for ( y = [0 : 5] ){
-        for ( x = [0 : 2 : 12] ){
-            char = (y*14)+x;
-            if (char>56){
+module MakeSingleFlap(char, part){
+    
             if (char<64) {
                 if (char==0){
                  translate([17+(x*17),22+(y*43),0])
@@ -68,7 +68,27 @@ module MakeFlaps(part){
                  translate([17+(x*17),22+(y*43),0])
                  flap(char-1, char, char+1, part);} 
             }
+            
+
+
+}
+
+module MakeFlaps(part){
+    for ( y = [0 : 5] ){
+        for ( x = [0 : 2 : 12] ){
+            char = (y*14)+x;
+            if (char<64) {
+                if (char==0){
+                 translate([17+(x*17),22+(y*43),0])
+                 flap(63, char, char+1, part); }
+                else if (char==63) {
+                 translate([17+(x*17),22+(y*43),0])
+                 flap(char-1, char, 0, part); }
+                else {
+                 translate([17+(x*17),22+(y*43),0])
+                 flap(char-1, char, char+1, part);} 
             }
+            
         }
     }
 }

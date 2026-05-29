@@ -24,6 +24,9 @@ responses received.  All commands match the firmware v7 protocol:
 Usage:
   python3 splitflap_test.py [--port /dev/ttyUSB0] [--baud 9600]
 
+  If --port is omitted, USB serial adapters are auto-detected. When several
+  are connected, a numbered list is shown so you can pick one.
+
 Requirements:
   pip install pyserial
 """
@@ -35,6 +38,7 @@ import time
 
 try:
     import serial
+    from serial.tools import list_ports
 except ImportError:
     print("ERROR: pyserial not installed.  Run:  pip install pyserial")
     sys.exit(1)
@@ -66,6 +70,79 @@ def flap_char(index):
     return "?"
 
 # ── Serial helpers ─────────────────────────────────────────────────────────────
+
+def _is_usb_port(port_info):
+    """Return True if a list_ports entry looks like a USB serial adapter."""
+    desc = (port_info.description or "").upper()
+    hwid = (port_info.hwid or "").upper()
+    device = port_info.device
+    if "USB" in desc or "USB" in hwid:
+        return True
+    if device.startswith("/dev/ttyUSB") or device.startswith("/dev/ttyACM"):
+        return True
+    if sys.platform == "win32" and device.upper().startswith("COM"):
+        return True
+    if sys.platform == "darwin" and (
+        device.startswith("/dev/cu.usb") or device.startswith("/dev/tty.usb")
+    ):
+        return True
+    return False
+
+def _port_label(port_info):
+    """Human-readable one-line description for a serial port."""
+    parts = [port_info.device]
+    if port_info.description and port_info.description != "n/a":
+        parts.append(port_info.description)
+    if port_info.manufacturer:
+        parts.append(f"({port_info.manufacturer})")
+    return " — ".join(parts)
+
+def detect_usb_ports():
+    """Return USB-looking serial ports, falling back to all ports if none match."""
+    all_ports = list(list_ports.comports())
+    usb_ports = [p for p in all_ports if _is_usb_port(p)]
+    return usb_ports if usb_ports else all_ports
+
+def choose_serial_port():
+    """
+    Auto-detect a serial port.  Use the sole match when only one is found;
+    otherwise show a numbered list and ask the user to choose.
+    """
+    ports = detect_usb_ports()
+    if not ports:
+        print(red("✗ No serial ports found. Connect a USB adapter or pass --port."))
+        sys.exit(1)
+
+    if len(ports) == 1:
+        port = ports[0].device
+        print(green(f"✓ Auto-detected port: {_port_label(ports[0])}"))
+        return port
+
+    print(bold("Multiple serial ports found:"))
+    for i, port_info in enumerate(ports, 1):
+        print(f"  {cyan(str(i)):>4}  {_port_label(port_info)}")
+
+    while True:
+        try:
+            raw = input(bold(f"Select port [1–{len(ports)}]: ")).strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            sys.exit(1)
+
+        if raw == "":
+            continue
+        try:
+            choice = int(raw)
+        except ValueError:
+            print(red("  Enter a number from the list"))
+            continue
+
+        if 1 <= choice <= len(ports):
+            port = ports[choice - 1].device
+            print(green(f"✓ Using {_port_label(ports[choice - 1])}"))
+            return port
+
+        print(red(f"  Please enter a number between 1 and {len(ports)}"))
 
 def open_port(port, baud):
     """Open the serial port; exit with a clear message on failure."""
@@ -364,8 +441,8 @@ def main():
         description="Interactive RS-485 test tool for split-flap display modules"
     )
     parser.add_argument(
-        "--port", default="/dev/ttyUSB0",
-        help="Serial port (default: /dev/ttyUSB0)"
+        "--port", default=None,
+        help="Serial port (default: auto-detect USB adapter)"
     )
     parser.add_argument(
         "--baud", type=int, default=9600,
@@ -373,7 +450,8 @@ def main():
     )
     args = parser.parse_args()
 
-    ser = open_port(args.port, args.baud)
+    port = args.port or choose_serial_port()
+    ser = open_port(port, args.baud)
     run(ser)
 
 if __name__ == "__main__":
