@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Single-Module Split-Flap — Beginner Build</title>
+<style>
+  :root {
+    --bg: #F7F5F0;
+    --panel: #FFFFFF;
+    --ink: #22252A;
+    --muted: #6E6F68;
+    --line: #E2DFD6;
+    --accent: #B87514;
+    --accent-soft: #F5E9D4;
+    --flap: #24272C;
+    --flap-text: #F2EFE7;
+    --danger: #B3402F;
+    --danger-soft: #F7E8E4;
+    --ok: #3E7A4E;
+    --code-bg: #EFECE4;
+    --w12: #C4432E;
+    --wgnd: #33363B;
+    --wa: #2E6FB3;
+    --wb: #3E8A5A;
+    --board: #1E5C42;
+    --board-silk: #E9E6DC;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141619;
+      --panel: #1D2024;
+      --ink: #E6E3DA;
+      --muted: #9A9D94;
+      --line: #2E3237;
+      --accent: #E8A020;
+      --accent-soft: #2E2617;
+      --flap: #0F1114;
+      --flap-text: #EFEBE0;
+      --danger: #E06A55;
+      --danger-soft: #2E1B17;
+      --ok: #6FB380;
+      --code-bg: #23262B;
+      --w12: #E05A44;
+      --wgnd: #B9BCC2;
+      --wa: #5B9BD9;
+      --wb: #5FAE7E;
+      --board: #1E5C42;
+      --board-silk: #E9E6DC;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141619; --panel: #1D2024; --ink: #E6E3DA; --muted: #9A9D94;
+    --line: #2E3237; --accent: #E8A020; --accent-soft: #2E2617;
+    --flap: #0F1114; --flap-text: #EFEBE0; --danger: #E06A55; --danger-soft: #2E1B17;
+    --ok: #6FB380; --code-bg: #23262B; --w12: #E05A44; --wgnd: #B9BCC2;
+    --wa: #5B9BD9; --wb: #5FAE7E; --board: #1E5C42; --board-silk: #E9E6DC;
+  }
+  :root[data-theme="light"] {
+    --bg: #F7F5F0; --panel: #FFFFFF; --ink: #22252A; --muted: #6E6F68;
+    --line: #E2DFD6; --accent: #B87514; --accent-soft: #F5E9D4;
+    --flap: #24272C; --flap-text: #F2EFE7; --danger: #B3402F; --danger-soft: #F7E8E4;
+    --ok: #3E7A4E; --code-bg: #EFECE4; --w12: #C4432E; --wgnd: #33363B;
+    --wa: #2E6FB3; --wb: #3E8A5A; --board: #1E5C42; --board-silk: #E9E6DC;
+  }
+
+  * { box-sizing: border-box; }
+  html { background: var(--bg); }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  .mono, code, pre, .pin {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  main {
+    max-width: 740px;
+    margin: 0 auto;
+    padding: 48px 24px 96px;
+  }
+
+  /* ---- flap hero ---- */
+  .flap-row { display: flex; flex-wrap: wrap; gap: 5px; margin: 0 0 10px; }
+  .flap {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 34px; height: 46px;
+    background: var(--flap);
+    color: var(--flap-text);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 26px; font-weight: 600;
+    border-radius: 4px;
+    position: relative;
+  }
+  .flap::after {
+    content: ""; position: absolute; left: 0; right: 0; top: 50%;
+    border-top: 1.5px solid var(--bg); opacity: 0.85;
+  }
+  .flap.sp { background: transparent; }
+  .flap.sp::after { display: none; }
+  @media (max-width: 480px) {
+    .flap { width: 24px; height: 34px; font-size: 18px; }
+  }
+
+  header p.lede { color: var(--muted); max-width: 60ch; margin: 14px 0 0; }
+  .eyebrow {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--accent); margin: 0 0 16px;
+  }
+
+  /* ---- structure ---- */
+  section { margin-top: 64px; }
+  h2 {
+    font-size: 24px; line-height: 1.3; margin: 0 0 4px;
+    text-wrap: balance;
+    display: flex; align-items: baseline; gap: 12px;
+  }
+  h2 .n {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 15px; color: var(--accent); font-weight: 600;
+  }
+  h3 { font-size: 17px; margin: 28px 0 8px; }
+  p { margin: 12px 0; max-width: 68ch; }
+  ul, ol { padding-left: 24px; max-width: 66ch; }
+  li { margin: 6px 0; }
+  a { color: var(--accent); }
+
+  .steptime {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 12.5px; color: var(--muted); margin: 0 0 14px;
+  }
+
+  /* ---- panels & notes ---- */
+  .figure {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 20px 16px 8px;
+    margin: 20px 0;
+    overflow-x: auto;
+  }
+  .figure figcaption {
+    font-size: 13.5px; color: var(--muted); padding: 10px 4px 8px;
+    max-width: 68ch;
+  }
+  .note, .warn {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 18px 0;
+    font-size: 15px;
+  }
+  .note { background: var(--accent-soft); }
+  .warn { background: var(--danger-soft); border-color: var(--danger); }
+  .warn strong { color: var(--danger); }
+  .note strong { color: var(--accent); }
+  .note p, .warn p { margin: 6px 0; }
+
+  /* ---- jargon definitions ---- */
+  .define {
+    border-left: 3px solid var(--accent);
+    padding: 2px 0 2px 16px;
+    margin: 16px 0;
+    font-size: 15px;
+    color: var(--muted);
+  }
+  .define b { color: var(--ink); }
+
+  pre {
+    background: var(--code-bg);
+    border-radius: 8px;
+    padding: 14px 18px;
+    overflow-x: auto;
+    font-size: 13.5px;
+    line-height: 1.6;
+  }
+  code {
+    background: var(--code-bg);
+    border-radius: 4px;
+    padding: 1.5px 6px;
+    font-size: 0.88em;
+  }
+  pre code { background: none; padding: 0; }
+
+  table {
+    border-collapse: collapse; width: 100%;
+    font-size: 14.5px; margin: 16px 0;
+  }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--muted); font-weight: 600;
+  }
+  .tablewrap { overflow-x: auto; }
+
+  svg text { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+
+  footer {
+    margin-top: 80px; padding-top: 20px; border-top: 1px solid var(--line);
+    font-size: 13.5px; color: var(--muted);
+  }
+</style>
+</head>
+<body>
+
+<main>
+<header>
+  <p class="eyebrow">Proof of concept · one module · no prior electronics needed</p>
+  <div class="flap-row" aria-label="SPLIT FLAP">
+    <span class="flap">S</span><span class="flap">P</span><span class="flap">L</span><span class="flap">I</span><span class="flap">T</span><span class="flap sp"></span><span class="flap">F</span><span class="flap">L</span><span class="flap">A</span><span class="flap">P</span>
+  </div>
+  <h1 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Single-module split-flap display — beginner build guide</h1>
+  <p class="lede">
+    You've printed and assembled the module — this guide covers everything electrical:
+    soldering four wires, flashing the chip, wiring it to a Raspberry Pi, and making the
+    drum spin to any letter you type. Every term is explained as it appears, and nothing
+    here involves mains voltage: the whole project runs at 12&nbsp;volts, which is
+    safe to touch.
+  </p>
+</header>
+
+<!-- ============================================================ -->
+<section>
+  <h2><span class="n">01</span> How your one-module system fits together</h2>
+  <p>
+    Four things talk to each other. A Raspberry Pi runs a small Python program and speaks
+    ordinary serial from two pins on its GPIO header. A small converter module turns that
+    into <em>RS-485</em>, a two-wire signal designed to travel along noisy cables. The
+    driver board on the back of your module listens on those two wires and drives the
+    motor to rotate the drum. A wall adapter provides 12&nbsp;V to power the motor.
+  </p>
+
+  <div class="define">
+    <b>RS-485</b> is just a hardier version of a serial cable — two data wires, called
+    <b>A</b> and <b>B</b>, shared by every module. Each message starts with a module
+    number, so in the full display all 45 modules hear everything but only one acts.
+    Your proof of concept is the same bus with one listener — and the Pi drives it the
+    same way in the finished display, so none of this wiring is throwaway.
+  </div>
+
+  <figure class="figure">
+  <svg viewBox="0 0 660 240" width="660" role="img" aria-label="System overview: a Raspberry Pi connects via four GPIO jumper wires to a TTL-to-RS485 converter module, which connects by two data wires to the split-flap module. A 12 volt wall adapter powers the module through a screw-terminal adapter.">
+    <!-- Pi -->
+    <rect x="20" y="52" width="130" height="84" rx="8" fill="none" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="85" y="84" text-anchor="middle" font-size="13.5" fill="var(--ink)">Raspberry Pi</text>
+    <text x="85" y="102" text-anchor="middle" font-size="10.5" fill="var(--muted)">Python + GPIO serial</text>
+
+    <!-- jumpers -->
+    <line x1="150" y1="82" x2="216" y2="82" stroke="var(--muted)" stroke-width="2"/>
+    <line x1="150" y1="94" x2="216" y2="94" stroke="var(--muted)" stroke-width="2"/>
+    <line x1="150" y1="106" x2="216" y2="106" stroke="var(--muted)" stroke-width="2"/>
+    <line x1="150" y1="118" x2="216" y2="118" stroke="var(--muted)" stroke-width="2"/>
+    <text x="183" y="72" text-anchor="middle" font-size="10.5" fill="var(--muted)">4 jumpers</text>
+
+    <!-- converter -->
+    <rect x="216" y="66" width="128" height="62" rx="8" fill="none" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="280" y="90" text-anchor="middle" font-size="12.5" fill="var(--ink)">TTL → RS-485</text>
+    <text x="280" y="108" text-anchor="middle" font-size="10.5" fill="var(--muted)">isolated module</text>
+
+    <!-- A/B wires -->
+    <line x1="344" y1="84" x2="470" y2="84" stroke="var(--wa)" stroke-width="2.5"/>
+    <line x1="344" y1="104" x2="470" y2="104" stroke="var(--wb)" stroke-width="2.5"/>
+    <text x="407" y="74" text-anchor="middle" font-size="11.5" fill="var(--wa)">A (data)</text>
+    <text x="407" y="122" text-anchor="middle" font-size="11.5" fill="var(--wb)">B (data)</text>
+
+    <!-- Module -->
+    <rect x="470" y="40" width="170" height="150" rx="8" fill="none" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="555" y="66" text-anchor="middle" font-size="14" fill="var(--ink)">Split-flap module</text>
+    <text x="555" y="86" text-anchor="middle" font-size="11" fill="var(--muted)">driver board · motor · drum</text>
+    <rect x="530" y="100" width="50" height="66" rx="4" fill="var(--flap)"/>
+    <line x1="530" y1="133" x2="580" y2="133" stroke="var(--bg)" stroke-width="2"/>
+    <text x="555" y="142" text-anchor="middle" font-size="30" font-weight="600" fill="var(--flap-text)">A</text>
+
+    <!-- PSU -->
+    <rect x="216" y="170" width="128" height="52" rx="8" fill="none" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="280" y="192" text-anchor="middle" font-size="13" fill="var(--ink)">12 V wall adapter</text>
+    <text x="280" y="210" text-anchor="middle" font-size="11" fill="var(--muted)">2 A, barrel jack</text>
+    <line x1="344" y1="188" x2="440" y2="188" stroke="var(--w12)" stroke-width="2.5"/>
+    <line x1="344" y1="204" x2="452" y2="204" stroke="var(--wgnd)" stroke-width="2.5"/>
+    <path d="M 440 188 L 470 160" stroke="var(--w12)" stroke-width="2.5" fill="none"/>
+    <path d="M 452 204 L 470 176" stroke="var(--wgnd)" stroke-width="2.5" fill="none"/>
+    <text x="394" y="178" text-anchor="middle" font-size="11.5" fill="var(--w12)">+12 V</text>
+    <text x="394" y="222" text-anchor="middle" font-size="11.5" fill="var(--wgnd)">GND (0 V)</text>
+  </svg>
+  <figcaption>
+    The whole proof of concept — and, minus the bus boards, the architecture of the
+    finished display too. The Pi and converter simply move onto the full bus when you
+    scale up.
+  </figcaption>
+  </figure>
+</section>
+
+<!-- ============================================================ -->
+<section>
+  <h2><span class="n">02</span> Shopping list</h2>
+  <p class="steptime">≈ £37 from The Pi Hut · order everything before starting</p>
+  <div class="tablewrap">
+  <table>
+    <tr><th>Item</th><th>What it's for</th><th>Price</th></tr>
+    <tr>
+      <td>Adafruit <strong>UPDI Friend</strong></td>
+      <td>Flashes the firmware onto the chip. Plugs into your computer via USB-C; ships with the 3-wire programming cable.</td>
+      <td>£6.70</td>
+    </tr>
+    <tr>
+      <td><strong>TTL to RS485 Galvanic Isolated Converter (C)</strong> (Waveshare)</td>
+      <td>Lets the Pi's GPIO serial pins speak RS-485. Automatic direction control (no code changes), 3.3 V-safe, and isolated — protects the Pi from wiring mistakes.</td>
+      <td>£6.80</td>
+    </tr>
+    <tr>
+      <td><strong>12 V / 2 A wall adapter</strong>, 5.5 × 2.1 mm barrel jack</td>
+      <td>Powers the motor. 2 A is generous headroom for one module.</td>
+      <td>£12.50</td>
+    </tr>
+    <tr>
+      <td><strong>Barrel-jack-to-screw-terminal adapter</strong> (female, 2.1 mm)</td>
+      <td>Turns the barrel plug into two screw terminals — no cutting or soldering mains-side wires.</td>
+      <td>~£1.50</td>
+    </tr>
+    <tr>
+      <td><strong>Solid-core hookup wire</strong>, 22 AWG — red, black, blue, green spools</td>
+      <td>The four wires into the board. Solid core (not stranded) goes into screw terminals neatly.</td>
+      <td>£2.80 each</td>
+    </tr>
+    <tr>
+      <td><strong>Female-to-female jumper wires</strong>, 20-pack</td>
+      <td>Pi GPIO header → converter module, and UPDI Friend → board programming pins. No soldering.</td>
+      <td>~£2</td>
+    </tr>
+    <tr>
+      <td><strong>Female 2.54 mm header</strong>, 3-pin</td>
+      <td>Solder one into the board's UPDI holes so the programmer just plugs in.</td>
+      <td>~£1.50</td>
+    </tr>
+  </table>
+  </div>
+  <p>
+    You already have: the assembled module, the driver board, a soldering iron, and a
+    <strong>Raspberry Pi</strong> (any model with the 40-pin header) with SD card and
+    power supply. A computer runs Arduino IDE for the one-time firmware flash. A
+    multimeter is a nice safety net if you have one.
+  </p>
+</section>
+
+<!-- ============================================================ -->
+<section>
+  <h2><span class="n">03</span> Know your driver board</h2>
+  <p>
+    Hold the board with the writing upright. Everything you'll touch is labelled on the
+    board itself (the white printed text is called the <em>silkscreen</em>). This diagram
+    matches the real V4 board's layout:
+  </p>
+
+  <figure class="figure">
+  <svg viewBox="0 0 560 420" width="560" role="img" aria-label="Driver board map. Top: 3-pin UPDI programming header labelled +3V3, G, UPDI. Middle column: four holes labelled 12V, B, A, G. Left: hall sensor connector. Bottom: motor JST connector.">
+    <rect x="200" y="25" width="156" height="351" rx="10" fill="var(--board)"/>
+    <circle cx="213" cy="38" r="5" fill="var(--bg)"/>
+    <circle cx="343" cy="38" r="5" fill="var(--bg)"/>
+    <circle cx="213" cy="363" r="5" fill="var(--bg)"/>
+    <circle cx="343" cy="363" r="5" fill="var(--bg)"/>
+
+    <text x="254" y="44" text-anchor="middle" font-size="9.5" fill="var(--board-silk)">UPDI Interface</text>
+    <rect x="228" y="49" width="52" height="16" rx="2" fill="none" stroke="var(--board-silk)" stroke-width="1"/>
+    <circle cx="237" cy="57" r="3.4" fill="var(--bg)"/>
+    <circle cx="254" cy="57" r="3.4" fill="var(--bg)"/>
+    <circle cx="271" cy="57" r="3.4" fill="var(--bg)"/>
+    <text x="237" y="77" text-anchor="middle" font-size="8.5" fill="var(--board-silk)">+3V3</text>
+    <text x="254" y="77" text-anchor="middle" font-size="8.5" fill="var(--board-silk)">G</text>
+    <text x="271" y="77" text-anchor="middle" font-size="8.5" fill="var(--board-silk)">UPDI</text>
+    <line x1="280" y1="57" x2="420" y2="57" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3 3"/>
+    <text x="428" y="53" font-size="12" fill="var(--ink)">Programming header</text>
+    <text x="428" y="69" font-size="11" fill="var(--muted)">used once, in step 04</text>
+
+    <circle cx="336" cy="60" r="3" fill="var(--bg)" opacity="0.55"/>
+    <circle cx="336" cy="73" r="3" fill="var(--bg)" opacity="0.55"/>
+    <circle cx="336" cy="86" r="3" fill="var(--bg)" opacity="0.55"/>
+    <circle cx="336" cy="99" r="3" fill="var(--bg)" opacity="0.55"/>
+    <circle cx="336" cy="112" r="3" fill="var(--bg)" opacity="0.55"/>
+    <text x="336" y="128" text-anchor="middle" font-size="8.5" fill="var(--board-silk)" opacity="0.7">IO1–5</text>
+
+    <g>
+      <circle cx="268" cy="151" r="6" fill="var(--bg)"/>
+      <circle cx="268" cy="151" r="2.5" fill="var(--w12)"/>
+      <circle cx="268" cy="188" r="6" fill="var(--bg)"/>
+      <circle cx="268" cy="188" r="2.5" fill="var(--wb)"/>
+      <circle cx="268" cy="213" r="6" fill="var(--bg)"/>
+      <circle cx="268" cy="213" r="2.5" fill="var(--wa)"/>
+      <circle cx="268" cy="250" r="6" fill="var(--bg)"/>
+      <circle cx="268" cy="250" r="2.5" fill="var(--wgnd)"/>
+      <text x="243" y="155" text-anchor="end" font-size="10" fill="var(--board-silk)">12V</text>
+      <text x="243" y="192" text-anchor="end" font-size="10" fill="var(--board-silk)">B</text>
+      <text x="243" y="217" text-anchor="end" font-size="10" fill="var(--board-silk)">A</text>
+      <text x="243" y="254" text-anchor="end" font-size="10" fill="var(--board-silk)">G</text>
+    </g>
+    <line x1="278" y1="151" x2="420" y2="151" stroke="var(--w12)" stroke-width="1" stroke-dasharray="3 3"/>
+    <text x="428" y="147" font-size="12" fill="var(--ink)">+12 V power in</text>
+    <text x="428" y="161" font-size="11" fill="var(--muted)">red wire</text>
+    <line x1="278" y1="188" x2="420" y2="188" stroke="var(--wb)" stroke-width="1" stroke-dasharray="3 3"/>
+    <text x="428" y="184" font-size="12" fill="var(--ink)">RS-485 B</text>
+    <text x="428" y="198" font-size="11" fill="var(--muted)">green wire</text>
+    <line x1="278" y1="213" x2="420" y2="213" stroke="var(--wa)" stroke-width="1" stroke-dasharray="3 3"/>
+    <text x="428" y="222" font-size="12" fill="var(--ink)">RS-485 A</text>
+    <text x="428" y="236" font-size="11" fill="var(--muted)">blue wire</text>
+    <line x1="278" y1="250" x2="420" y2="250" stroke="var(--wgnd)" stroke-width="1" stroke-dasharray="3 3"/>
+    <text x="428" y="260" font-size="12" fill="var(--ink)">Ground (0 V)</text>
+    <text x="428" y="274" font-size="11" fill="var(--muted)">black wire</text>
+
+    <text x="150" y="147" text-anchor="middle" font-size="9.5" fill="var(--muted)">Hall Sensor</text>
+    <rect x="205" y="152" width="46" height="15" rx="2" fill="none" stroke="var(--board-silk)" stroke-width="1" opacity="0.7"/>
+    <circle cx="213" cy="159" r="3" fill="var(--bg)" opacity="0.55"/>
+    <circle cx="227" cy="159" r="3" fill="var(--bg)" opacity="0.55"/>
+    <circle cx="241" cy="159" r="3" fill="var(--bg)" opacity="0.55"/>
+    <line x1="205" y1="159" x2="168" y2="159" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3 3"/>
+    <text x="150" y="163" text-anchor="middle" font-size="10" fill="var(--muted)">already</text>
+    <text x="150" y="177" text-anchor="middle" font-size="10" fill="var(--muted)">connected</text>
+
+    <rect x="220" y="316" width="80" height="24" rx="3" fill="none" stroke="var(--board-silk)" stroke-width="1.2"/>
+    <circle cx="234" cy="328" r="3" fill="var(--bg)"/>
+    <circle cx="248" cy="328" r="3" fill="var(--bg)"/>
+    <circle cx="262" cy="328" r="3" fill="var(--bg)"/>
+    <circle cx="276" cy="328" r="3" fill="var(--bg)"/>
+    <circle cx="290" cy="328" r="3" fill="var(--bg)"/>
+    <text x="260" y="356" text-anchor="middle" font-size="9.5" fill="var(--board-silk)">Motor JST-XH</text>
+    <line x1="300" y1="328" x2="420" y2="328" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3 3"/>
+    <text x="428" y="324" font-size="12" fill="var(--ink)">Motor plug</text>
+    <text x="428" y="338" font-size="11" fill="var(--muted)">already connected</text>
+
+    <text x="278" y="398" text-anchor="middle" font-size="11" fill="var(--muted)">Split Flap Driver Board V4 — viewed from the front</text>
+  </svg>
+  <figcaption>
+    The four holes in the middle column are where the pogo pins would go for the
+    full display. For your proof of concept, wires solder straight into them.
+    Trust the silkscreen over this diagram if they ever disagree.
+  </figcaption>
+  </figure>
+</section>
+
+<!-- ============================================================ -->
+<section>
+  <h2><span class="n">04</span> Solder four wires into the pogo-pin holes</h2>
+  <p class="steptime">≈ 15 minutes · the only soldering in this project</p>
+  <p>
+    Cut four lengths of solid-core wire, roughly 30&nbsp;cm each — long enough to reach
+    your desk comfortably. Use the colour convention above (red&nbsp;=&nbsp;12V,
+    black&nbsp;=&nbsp;G, blue&nbsp;=&nbsp;A, green&nbsp;=&nbsp;B); every later step
+    assumes it.
+  </p>
+  <ol>
+    <li>Strip about 3&nbsp;mm of insulation from one end of each wire.</li>
+    <li>Push the bare end into its hole from the <strong>back</strong> of the board so the wire exits away from the module's mechanism.</li>
+    <li>Touch the iron to the wire and the ring around the hole together for a second, then feed in a little solder. A good joint looks like a small shiny cone, not a ball.</li>
+    <li>Tug each wire gently — it shouldn't move.</li>
+  </ol>
+  <div class="warn">
+    <p><strong>Check before moving on:</strong> the red wire must be in the hole marked
+    <span class="pin">12V</span> and black in <span class="pin">G</span>. Swapping power
+    and ground is the one mistake in this project that can destroy the board. Getting
+    A and B backwards, by contrast, is harmless — the display just stays silent until
+    you swap them.</p>
+  </div>
+  <p>
+    Strip about 6&nbsp;mm from the free ends — that's what clamps into screw terminals
+    later. While the iron is hot, also solder the 3-pin female header into the board's
+    <span class="pin">UPDI Interface</span> holes — it makes the next step plug-and-play.
+  </p>
+</section>
+
+<!-- ============================================================ -->
+<section>
+  <h2><span class="n">05</span> Flash the firmware</h2>
+  <p class="steptime">≈ 30 minutes, mostly one-time software setup</p>
+
+  <div class="define">
+    <b>Flashing</b> means copying the program (<b>firmware</b>) onto the board's chip, an
+    ATtiny1616. This chip has no USB socket, so the <b>UPDI Friend</b> acts as the bridge:
+    USB on the computer side, three wires on the chip side. UPDI is just the name of the
+    protocol those three wires speak. You'll do this once — settings survive power-off.
+  </div>
+
+  <h3>5a — One-time Arduino setup</h3>
+  <ol>
+    <li>Install the <a href="https://www.arduino.cc/en/software">Arduino IDE</a> (free).</li>
+    <li>Open <strong>Settings → Additional boards manager URLs</strong> and paste:
+      <pre><code>http://drazzy.com/package_drazzy.com_index.json</code></pre></li>
+    <li>Open <strong>Tools → Board → Boards Manager</strong>, search <strong>megaTinyCore</strong>, install it. (This teaches Arduino about the ATtiny1616.)</li>
+    <li>Under <strong>Tools</strong>, set:
+      <ul>
+        <li><strong>Board</strong> → megaTinyCore → <em>ATtiny3216/1616/1606/816/806/416/406</em></li>
+        <li><strong>Chip</strong> → <em>ATtiny1616</em></li>
+        <li><strong>Programmer</strong> → <em>SerialUPDI — 230400 baud</em></li>
+        <li><strong>Save EEPROM</strong> → <em>retained</em> (keeps settings through future reflashes)</li>
+        <li>Leave clock and everything else at defaults.</li>
+      </ul>
+    </li>
+  </ol>
+
+  <h3>5b — Set the module's address</h3>
+  <p>
+    Open <code>firmware/splitflapfirmwarev7/splitflapfirmwarev7.ino</code> in the IDE.
+    Near line 40, find and change:
+  </p>
+  <pre><code>const uint8_t HARDCODED_ID = 38;   //  change 38 → 0</code></pre>
+  <p>
+    Every module on a bus needs a unique number; yours will be <strong>module 0</strong>.
+    (In the eventual full display, 0 is the top-left position.)
+  </p>
+
+  <h3>5c — Connect the UPDI Friend and upload</h3>
+  <figure class="figure">
+  <svg viewBox="0 0 620 180" width="620" role="img" aria-label="UPDI Friend wiring: red wire to +3V3, black to G, white to UPDI on the board's 3-pin header. Voltage switch set to 3V. 12 volt supply unplugged.">
+    <rect x="20" y="50" width="150" height="80" rx="8" fill="none" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="95" y="80" text-anchor="middle" font-size="13" fill="var(--ink)">UPDI Friend</text>
+    <text x="95" y="98" text-anchor="middle" font-size="10.5" fill="var(--muted)">USB-C side → computer</text>
+    <rect x="38" y="106" width="60" height="14" rx="3" fill="none" stroke="var(--accent)" stroke-width="1.2"/>
+    <text x="68" y="117" text-anchor="middle" font-size="9" fill="var(--accent)">switch: 3V ✓</text>
+
+    <line x1="170" y1="66" x2="400" y2="66" stroke="var(--w12)" stroke-width="2.5"/>
+    <line x1="170" y1="90" x2="400" y2="90" stroke="var(--wgnd)" stroke-width="2.5"/>
+    <line x1="170" y1="114" x2="400" y2="114" stroke="var(--accent)" stroke-width="2.5"/>
+    <text x="285" y="58" text-anchor="middle" font-size="11.5" fill="var(--ink)">red (PWR)  →  +3V3</text>
+    <text x="285" y="106" text-anchor="middle" font-size="11.5" fill="var(--ink)">black (GND)  →  G</text>
+    <text x="285" y="130" text-anchor="middle" font-size="11.5" fill="var(--ink)">white (UPDI)  →  UPDI</text>
+
+    <rect x="400" y="36" width="190" height="110" rx="8" fill="var(--board)"/>
+    <text x="495" y="60" text-anchor="middle" font-size="11" fill="var(--board-silk)">UPDI Interface</text>
+    <circle cx="447" cy="78" r="4.5" fill="var(--bg)"/>
+    <circle cx="495" cy="78" r="4.5" fill="var(--bg)"/>
+    <circle cx="543" cy="78" r="4.5" fill="var(--bg)"/>
+    <text x="447" y="100" text-anchor="middle" font-size="10" fill="var(--board-silk)">+3V3</text>
+    <text x="495" y="100" text-anchor="middle" font-size="10" fill="var(--board-silk)">G</text>
+    <text x="543" y="100" text-anchor="middle" font-size="10" fill="var(--board-silk)">UPDI</text>
+    <line x1="400" y1="66" x2="447" y2="74" stroke="var(--w12)" stroke-width="2.5"/>
+    <line x1="400" y1="90" x2="495" y2="75" stroke="var(--wgnd)" stroke-width="2.5"/>
+    <line x1="400" y1="114" x2="543" y2="80" stroke="var(--accent)" stroke-width="2.5"/>
+    <text x="495" y="132" text-anchor="middle" font-size="10" fill="var(--board-silk)" opacity="0.85">12 V supply: unplugged</text>
+  </svg>
+  <figcaption>
+    Three connections, matching label to label — the Friend's included cable ends in
+    male pins that plug straight into the female header you soldered in step 04.
+    The Friend's 3V switch powers the chip while you flash, so the 12&nbsp;V supply
+    stays unplugged for this whole step.
+  </figcaption>
+  </figure>
+  <ol>
+    <li>Set the UPDI Friend's voltage switch to <strong>3V</strong>.</li>
+    <li>Plug its cable's three pins into the board's header: red → <span class="pin">+3V3</span>, black → <span class="pin">G</span>, white → <span class="pin">UPDI</span>.</li>
+    <li>Plug the Friend into the computer over USB-C. Its power light should come on.</li>
+    <li>In the IDE: <strong>Tools → Port</strong> → the entry like <code>/dev/cu.usbserial-…</code>.</li>
+    <li>Choose <strong>Sketch → Upload Using Programmer</strong> (⌘⇧U — <em>not</em> the normal Upload button).</li>
+    <li>Wait for <em>"Done uploading"</em>, then unplug the Friend. The board's chip now remembers it is module 0, forever.</li>
+  </ol>
+</section>
+
+<!-- ============================================================ -->
+<section>
+  <h2><span class="n">06</span> Wire everything together</h2>
+  <p class="steptime">≈ 10 minutes · screwdriver only, no soldering</p>
+
+  <figure class="figure">
+  <svg viewBox="0 0 660 300" width="660" role="img" aria-label="Final wiring: four jumper wires from the Pi GPIO header to the converter module (3V3 to VCC, GND to GND, TXD to RXD, RXD to TXD), converter screw terminals A+ to the blue A wire and B- to the green B wire. Wall adapter barrel jack into screw adapter; plus terminal to red 12V wire, minus terminal to black G wire.">
+    <!-- Pi -->
+    <rect x="20" y="30" width="140" height="120" rx="8" fill="none" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="90" y="54" text-anchor="middle" font-size="13" fill="var(--ink)">Raspberry Pi</text>
+    <text x="90" y="70" text-anchor="middle" font-size="10" fill="var(--muted)">GPIO header</text>
+    <text x="38" y="92" font-size="10" fill="var(--ink)">pin 1 · 3V3</text>
+    <text x="38" y="108" font-size="10" fill="var(--ink)">pin 6 · GND</text>
+    <text x="38" y="124" font-size="10" fill="var(--ink)">pin 8 · TXD</text>
+    <text x="38" y="140" font-size="10" fill="var(--ink)">pin 10 · RXD</text>
+
+    <!-- jumpers to module -->
+    <line x1="160" y1="88" x2="300" y2="88" stroke="var(--w12)" stroke-width="2"/>
+    <line x1="160" y1="104" x2="300" y2="104" stroke="var(--wgnd)" stroke-width="2"/>
+    <line x1="160" y1="120" x2="300" y2="120" stroke="var(--accent)" stroke-width="2"/>
+    <line x1="160" y1="136" x2="300" y2="136" stroke="var(--muted)" stroke-width="2"/>
+    <text x="230" y="80" text-anchor="middle" font-size="10" fill="var(--ink)">3V3 → VCC</text>
+    <text x="230" y="100" text-anchor="middle" font-size="10" fill="var(--ink)">GND → GND</text>
+    <text x="230" y="116" text-anchor="middle" font-size="10" fill="var(--ink)">TXD → RXD ⤬</text>
+    <text x="230" y="152" text-anchor="middle" font-size="10" fill="var(--ink)">RXD → TXD ⤬</text>
+
+    <!-- converter -->
+    <rect x="300" y="60" width="130" height="96" rx="8" fill="none" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="365" y="84" text-anchor="middle" font-size="12" fill="var(--ink)">TTL → RS-485</text>
+    <text x="365" y="100" text-anchor="middle" font-size="10" fill="var(--muted)">isolated module</text>
+    <text x="330" y="126" font-size="10.5" fill="var(--wa)">A+</text>
+    <text x="330" y="142" font-size="10.5" fill="var(--wb)">B−</text>
+
+    <!-- A/B to board -->
+    <line x1="430" y1="122" x2="480" y2="122" stroke="var(--wa)" stroke-width="2.5"/>
+    <line x1="430" y1="138" x2="480" y2="138" stroke="var(--wb)" stroke-width="2.5"/>
+    <text x="455" y="112" text-anchor="middle" font-size="10" fill="var(--wa)">blue</text>
+    <text x="455" y="154" text-anchor="middle" font-size="10" fill="var(--wb)">green</text>
+
+    <!-- board -->
+    <rect x="480" y="50" width="160" height="180" rx="8" fill="var(--board)"/>
+    <text x="560" y="74" text-anchor="middle" font-size="12" fill="var(--board-silk)">Driver board</text>
+    <circle cx="512" cy="122" r="5" fill="var(--bg)"/><circle cx="512" cy="122" r="2" fill="var(--wa)"/>
+    <circle cx="512" cy="138" r="5" fill="var(--bg)"/><circle cx="512" cy="138" r="2" fill="var(--wb)"/>
+    <circle cx="512" cy="176" r="5" fill="var(--bg)"/><circle cx="512" cy="176" r="2" fill="var(--w12)"/>
+    <circle cx="512" cy="196" r="5" fill="var(--bg)"/><circle cx="512" cy="196" r="2" fill="var(--wgnd)"/>
+    <text x="528" y="126" font-size="10.5" fill="var(--board-silk)">A</text>
+    <text x="528" y="142" font-size="10.5" fill="var(--board-silk)">B</text>
+    <text x="528" y="180" font-size="10.5" fill="var(--board-silk)">12V</text>
+    <text x="528" y="200" font-size="10.5" fill="var(--board-silk)">G</text>
+
+    <!-- PSU chain -->
+    <rect x="20" y="210" width="120" height="48" rx="8" fill="none" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="80" y="230" text-anchor="middle" font-size="12" fill="var(--ink)">12 V adapter</text>
+    <text x="80" y="246" text-anchor="middle" font-size="10.5" fill="var(--muted)">stays unplugged</text>
+    <line x1="140" y1="234" x2="185" y2="234" stroke="var(--muted)" stroke-width="3"/>
+    <rect x="185" y="218" width="95" height="34" rx="5" fill="none" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="232" y="233" text-anchor="middle" font-size="10.5" fill="var(--ink)">screw adapter</text>
+    <text x="212" y="247" text-anchor="middle" font-size="11" fill="var(--w12)">+</text>
+    <text x="252" y="247" text-anchor="middle" font-size="11" fill="var(--wgnd)">−</text>
+    <path d="M 280 228 L 460 228 L 460 178 L 507 176" stroke="var(--w12)" stroke-width="2.5" fill="none"/>
+    <path d="M 280 244 L 470 244 L 470 198 L 507 196" stroke="var(--wgnd)" stroke-width="2.5" fill="none"/>
+    <text x="370" y="220" text-anchor="middle" font-size="10.5" fill="var(--w12)">red → 12V</text>
+    <text x="370" y="260" text-anchor="middle" font-size="10.5" fill="var(--wgnd)">black → G</text>
+  </svg>
+  <figcaption>
+    Match colours to labels. The TX/RX jumpers <em>cross over</em> — each device's
+    "talk" pin meets the other's "listen" pin. The converter's RS-485 side is isolated,
+    so no ground wire runs between the Pi and the board — just the A and B pair.
+  </figcaption>
+  </figure>
+
+  <ol>
+    <li>Push four female-female jumpers onto the Pi's GPIO header and the converter's pins: <strong>pin 1 (3V3) → VCC</strong>, <strong>pin 6 (GND) → GND</strong>, <strong>pin 8 (TXD) → RXD</strong>, <strong>pin 10 (RXD) → TXD</strong>.</li>
+    <li>Screw the <strong>blue</strong> wire into the converter terminal marked <strong>A+</strong>, and <strong>green</strong> into <strong>B−</strong>.</li>
+    <li>Screw the <strong>red</strong> wire into the <strong>+</strong> terminal of the barrel adapter and the <strong>black</strong> into <strong>−</strong>. Most screw adapters print + and − on the housing; double-check yours.</li>
+    <li>Leave the 12 V adapter <strong>unplugged from the wall</strong> until step 08.</li>
+  </ol>
+  <div class="note">
+    <p><strong>Nothing here bites.</strong> 12 V at these currents can't hurt you — the
+    worst realistic outcome of a mistake is a dead board (only from swapping + and −, which
+    you already double-checked). The mains side stays sealed inside the wall adapter, and
+    the converter's isolation protects the Pi from any wiring mishap on the bus side.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section>
+  <h2><span class="n">07</span> Enable the Pi's serial port</h2>
+  <p class="steptime">≈ 5 minutes · one-time</p>
+  <p>
+    The Pi's GPIO serial pins are normally reserved for a login console. Hand them over
+    to your display:
+  </p>
+  <pre><code>sudo raspi-config
+# Interface Options → Serial Port →
+#   "Would you like a login shell over serial?"      → No
+#   "Would you like the serial port hardware enabled?" → Yes
+sudo reboot</code></pre>
+  <p>
+    After the reboot the port exists as <code>/dev/serial0</code> — that name works on
+    every Pi model.
+  </p>
+</section>
+
+<!-- ============================================================ -->
+<section>
+  <h2><span class="n">08</span> First power-on</h2>
+  <p class="steptime">≈ 2 minutes · the moment of truth</p>
+  <ol>
+    <li>Final glance: red in <span class="pin">12V</span>, black in <span class="pin">G</span>, motor and Hall sensor plugged in, drum free to spin.</li>
+    <li>Plug the 12 V adapter into the wall.</li>
+    <li><strong>What you should see:</strong> almost immediately (module 0 has no start-up delay), the drum rotates — possibly a full revolution — then stops precisely at the blank flap. That's the module <em>homing</em>: spinning until the magnet in the drum passes the Hall sensor, then counting a known number of steps to flap zero.</li>
+  </ol>
+  <p>
+    If it did that: the electronics all work. If instead the drum spins for a while and
+    gives up, or nothing moves at all, unplug and jump to the troubleshooting table —
+    both symptoms have short fix lists.
+  </p>
+</section>
+
+<!-- ============================================================ -->
+<section>
+  <h2><span class="n">09</span> Drive it from the Pi</h2>
+  <p class="steptime">≈ 10 minutes</p>
+  <p>
+    The repo ships an interactive test tool. SSH into the Pi (or open a terminal on it),
+    then from the repo folder:
+  </p>
+  <pre><code># one-time: install the serial library
+python3 -m pip install pyserial
+
+# run the tool
+python3 firmware/splitflapfirmwarev7/splitflap_test.py \
+    --port /dev/serial0 --baud 9600</code></pre>
+  <p>
+    A menu appears. Try, in order:
+  </p>
+  <ul>
+    <li><strong>Home</strong> (module 0) — the drum should repeat its power-on dance.</li>
+    <li><strong>Show character</strong> → <code>A</code> — the drum flips round and stops on A.</li>
+    <li>Spell something one letter at a time. You've built a split-flap display.</li>
+  </ul>
+  <p>
+    Under the hood each menu action sends a tiny text message down the A/B wires, like
+    <code>m0-A</code> — "module 0, show character A". The chip does everything else.
+  </p>
+
+  <h3>If letters land slightly off</h3>
+  <p>
+    Two menu commands tune the module, and both save to the chip permanently:
+  </p>
+  <ul>
+    <li><strong>Calibrate</strong> (<code>c</code>) — the module measures its own drum rotation and corrects step counts. Run this once.</li>
+    <li><strong>Nudge</strong> (<code>s</code>) — if every character consistently stops, say, half a flap early, nudge forward a few steps at a time until "A" is perfectly framed. The correction is remembered.</li>
+  </ul>
+  <p>
+    If characters are off by <em>whole flaps</em> (you ask for A and always get C), the
+    flaps were loaded into the drum shifted by that many positions — rehome, then reseat
+    the flaps so the blank shows at the home position.
+  </p>
+</section>
+
+<!-- ============================================================ -->
+<section>
+  <h2><span class="n">10</span> The web app</h2>
+  <p>
+    Same Pi, same wiring — when you're ready to graduate from the test tool:
+  </p>
+  <pre><code>python3 -m pip install flask pyserial pytz yfinance requests</code></pre>
+  <p>Then three small edits at the top of <code>frontend/app.py</code>:</p>
+  <ul>
+    <li><strong>Line ~14</strong> — set the serial port to <code>/dev/serial0</code>.</li>
+    <li><strong>Line ~16</strong> — the settings path is hardcoded to <code>/home/gordo/…</code>; change it to your Pi username and <code>mkdir -p ~/splitflap</code>.</li>
+    <li><strong>Bottom of the file</strong> — change port <code>80</code> to <code>5000</code> so it runs without sudo.</li>
+  </ul>
+  <pre><code>cd frontend
+python3 app.py
+# then browse to  http://&lt;pi-address&gt;:5000</code></pre>
+  <p>
+    The web app assumes the full 3 × 15 display and happily sends commands to all 45
+    module numbers; your lone module 0 simply answers the ones addressed to it —
+    it sits at the <em>top-left</em> position, so it shows the first character of the
+    top row of whatever page the app displays. Perfect for a one-character clock digit,
+    less so for reading the weather. The app becomes properly useful once you build
+    more modules — which, wiring-wise, is just this guide repeated with
+    <code>HARDCODED_ID</code> = 1, 2, 3…
+  </p>
+</section>
+
+<!-- ============================================================ -->
+<section>
+  <h2><span class="n">11</span> Troubleshooting</h2>
+  <div class="tablewrap">
+  <table>
+    <tr><th>Symptom</th><th>Most likely fixes, in order</th></tr>
+    <tr>
+      <td>Nothing at all on power-up</td>
+      <td>Wall adapter actually on? Red/black in the right holes? Solder joints solid (tug test)? If you have a multimeter: ~12 V between the 12V and G holes.</td>
+    </tr>
+    <tr>
+      <td>Drum spins ~1½ turns, then stops somewhere random</td>
+      <td>Homing failed — the Hall sensor never saw the magnet. Check the sensor plug is in, the sensor sits close to the drum's path, and if it still fails, the magnet is glued in upside-down: flip it.</td>
+    </tr>
+    <tr>
+      <td>Motor buzzes / twitches but won't turn</td>
+      <td>Motor plug half-seated; or the motor is a 5 V 28BYJ-48 (the board needs the 12 V version); or the gear train is jammed — try turning the drum gently by hand with power off.</td>
+    </tr>
+    <tr>
+      <td>Powers up and homes fine, but the test tool gets no response</td>
+      <td>Swap the blue and green wires at the converter's A+/B− (the classic RS-485 swap — completely safe). Check the TX/RX jumpers cross over (Pi TXD → module RXD). Confirm the serial console was disabled in raspi-config and the port is <code>/dev/serial0</code> at 9600.</td>
+    </tr>
+    <tr>
+      <td><code>/dev/serial0</code> missing, or "permission denied"</td>
+      <td>Re-run the raspi-config step and reboot. For permissions: <code>sudo usermod -a -G dialout $USER</code>, then log out and back in.</td>
+    </tr>
+    <tr>
+      <td>Upload fails in Arduino IDE</td>
+      <td>Check Programmer is <em>SerialUPDI — 230400 baud</em>, the right port is chosen, the Friend's switch is on 3V, and the three wires match labels. Wiggle-test the connections and use <em>Upload Using Programmer</em>, not Upload.</td>
+    </tr>
+    <tr>
+      <td>Right letters, but drifts as it runs</td>
+      <td>Run <strong>Calibrate</strong> from the test tool; check for debris/skipping in the printed gears.</td>
+    </tr>
+  </table>
+  </div>
+</section>
+
+<footer>
+  <p>
+    Companion to <strong>BUILD_GUIDE.md</strong> in the repo, which covers the full
+    45-module display: PCB ordering, printing, the RS-485 protocol reference, and
+    system wiring. Original design by Adam G Makes (CC BY-NC-SA 4.0).
+  </p>
+</footer>
+</main>
+
+</body>
+</html>

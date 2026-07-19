@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Programming Jig — Split-Flap Driver V4</title>
+<style>
+  :root {
+    --bg: #F7F5F0; --panel: #FFFFFF; --ink: #22252A; --muted: #6E6F68;
+    --line: #E2DFD6; --accent: #B87514; --accent-soft: #F5E9D4;
+    --danger: #B3402F; --code-bg: #EFECE4;
+    --w12: #C4432E; --wgnd: #33363B; --wa: #2E6FB3; --wb: #3E8A5A;
+    --board: #1E5C42; --board-silk: #E9E6DC; --print: #C9C2B4; --print2: #AFA893;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141619; --panel: #1D2024; --ink: #E6E3DA; --muted: #9A9D94;
+      --line: #2E3237; --accent: #E8A020; --accent-soft: #2E2617;
+      --danger: #E06A55; --code-bg: #23262B;
+      --w12: #E05A44; --wgnd: #B9BCC2; --wa: #5B9BD9; --wb: #5FAE7E;
+      --board: #1E5C42; --board-silk: #E9E6DC; --print: #4A4E55; --print2: #3A3E44;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141619; --panel: #1D2024; --ink: #E6E3DA; --muted: #9A9D94;
+    --line: #2E3237; --accent: #E8A020; --accent-soft: #2E2617;
+    --danger: #E06A55; --code-bg: #23262B;
+    --w12: #E05A44; --wgnd: #B9BCC2; --wa: #5B9BD9; --wb: #5FAE7E;
+    --board: #1E5C42; --board-silk: #E9E6DC; --print: #4A4E55; --print2: #3A3E44;
+  }
+  :root[data-theme="light"] {
+    --bg: #F7F5F0; --panel: #FFFFFF; --ink: #22252A; --muted: #6E6F68;
+    --line: #E2DFD6; --accent: #B87514; --accent-soft: #F5E9D4;
+    --danger: #B3402F; --code-bg: #EFECE4;
+    --w12: #C4432E; --wgnd: #33363B; --wa: #2E6FB3; --wb: #3E8A5A;
+    --board: #1E5C42; --board-silk: #E9E6DC; --print: #C9C2B4; --print2: #AFA893;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--bg); }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 48px 24px 96px; }
+  .eyebrow { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin: 0 0 10px; }
+  h1 { font-size: 28px; line-height: 1.25; margin: 0 0 8px; text-wrap: balance; }
+  h2 { font-size: 21px; margin: 56px 0 8px; }
+  p { margin: 12px 0; max-width: 68ch; }
+  .lede { color: var(--muted); }
+  code { font-family: ui-monospace, "SF Mono", Menlo, monospace; background: var(--code-bg);
+    border-radius: 4px; padding: 1.5px 6px; font-size: 0.88em; }
+  .figure { background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+    padding: 20px 16px 8px; margin: 20px 0; overflow-x: auto; }
+  .figure figcaption { font-size: 13.5px; color: var(--muted); padding: 10px 4px 8px; max-width: 68ch; }
+  table { border-collapse: collapse; width: 100%; font-size: 14.5px; margin: 16px 0;
+    font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+  th { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .tablewrap { overflow-x: auto; }
+  .note { border: 1px solid var(--line); background: var(--accent-soft); border-radius: 8px;
+    padding: 14px 18px; margin: 18px 0; font-size: 15px; }
+  .note strong { color: var(--accent); }
+  ol, ul { padding-left: 24px; max-width: 66ch; }
+  li { margin: 6px 0; }
+  svg text { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+</style>
+</head>
+<body>
+
+<main>
+<header>
+  <p class="eyebrow">Production tooling · scaling to 45 boards</p>
+  <h1>Flash-and-Address Programming Jig</h1>
+  <p class="lede">
+    Seat a bare driver board, press the head down, and seven spring pins contact
+    everything needed to flash the firmware, assign the module's bus address, and
+    verify it — one seating per board, no soldering per board. Printable model:
+    <code>programming-jig/jig.scad</code>.
+  </p>
+</header>
+
+<h2>Contact layout — top view</h2>
+<p>
+  Coordinates in mm from the board's top-left corner (component side up, silkscreen
+  upright), taken from the V4 KiCad layout. Every target is a Ø1.0&nbsp;mm plated
+  hole, so spear-tip pogo pins self-center — print tolerance is not critical.
+</p>
+
+<figure class="figure">
+<svg viewBox="0 0 640 570" width="640" role="img" aria-label="Top view of the 30 by 60 millimetre board showing four corner registration pegs and seven contact points with coordinates.">
+  <!-- board 30x60 @ x8 => 240x480 at (180,40) -->
+  <rect x="180" y="40" width="240" height="480" rx="8" fill="var(--board)"/>
+  <text x="300" y="66" text-anchor="middle" font-size="11" fill="var(--board-silk)" opacity="0.8">driver board V4 · 30 × 60 mm</text>
+
+  <!-- corner pegs -->
+  <g fill="var(--bg)" stroke="var(--accent)" stroke-width="1.5">
+    <circle cx="204" cy="64" r="12"/>
+    <circle cx="396" cy="64" r="12"/>
+    <circle cx="204" cy="496" r="12"/>
+    <circle cx="396" cy="496" r="12"/>
+  </g>
+  <text x="204" y="68" text-anchor="middle" font-size="9" fill="var(--accent)">peg</text>
+  <text x="396" y="68" text-anchor="middle" font-size="9" fill="var(--accent)">peg</text>
+  <text x="204" y="500" text-anchor="middle" font-size="9" fill="var(--accent)">peg</text>
+  <text x="396" y="500" text-anchor="middle" font-size="9" fill="var(--accent)">peg</text>
+  <!-- peg coord callouts -->
+  <text x="168" y="56" text-anchor="end" font-size="10.5" fill="var(--muted)">(3, 3)</text>
+  <text x="168" y="500" text-anchor="end" font-size="10.5" fill="var(--muted)">(3, 57)</text>
+  <text x="432" y="56" font-size="10.5" fill="var(--muted)">(27, 3)</text>
+  <text x="432" y="500" font-size="10.5" fill="var(--muted)">(27, 57)</text>
+  <text x="300" y="545" text-anchor="middle" font-size="10.5" fill="var(--muted)">Ø3.0 corner holes → Ø2.7 printed pegs</text>
+
+  <!-- UPDI row: (12.81,6.8)->(282.5,94.4) grey; (15.35)->302.8; (17.89)->323.1 -->
+  <circle cx="282.5" cy="94.4" r="6" fill="var(--bg)" opacity="0.45"/>
+  <circle cx="302.8" cy="94.4" r="7" fill="var(--bg)"/>
+  <circle cx="302.8" cy="94.4" r="3" fill="var(--wgnd)"/>
+  <circle cx="323.1" cy="94.4" r="7" fill="var(--bg)"/>
+  <circle cx="323.1" cy="94.4" r="3" fill="var(--accent)"/>
+  <text x="282.5" y="115" text-anchor="middle" font-size="8.5" fill="var(--board-silk)" opacity="0.6">+3V3</text>
+  <text x="302.8" y="115" text-anchor="middle" font-size="8.5" fill="var(--board-silk)">G</text>
+  <text x="323.1" y="115" text-anchor="middle" font-size="8.5" fill="var(--board-silk)">UPDI</text>
+  <line x1="332" y1="94.4" x2="452" y2="94.4" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3 3"/>
+  <text x="458" y="90" font-size="11.5" fill="var(--ink)">GND (15.35, 6.8)</text>
+  <text x="458" y="105" font-size="11.5" fill="var(--ink)">UPDI (17.89, 6.8)</text>
+  <text x="458" y="120" font-size="10.5" fill="var(--muted)">+3V3 not contacted</text>
+
+  <!-- bus column x=15 -> 300; y: 22.35->218.8, 28.1->264.8, 31.9->295.2, 37.65->341.2 -->
+  <g>
+    <circle cx="300" cy="218.8" r="7" fill="var(--bg)"/><circle cx="300" cy="218.8" r="3" fill="var(--w12)"/>
+    <circle cx="300" cy="264.8" r="7" fill="var(--bg)"/><circle cx="300" cy="264.8" r="3" fill="var(--wb)"/>
+    <circle cx="300" cy="295.2" r="7" fill="var(--bg)"/><circle cx="300" cy="295.2" r="3" fill="var(--wa)"/>
+    <circle cx="300" cy="341.2" r="7" fill="var(--bg)"/><circle cx="300" cy="341.2" r="3" fill="var(--wgnd)"/>
+  </g>
+  <text x="285" y="222.8" text-anchor="end" font-size="9" fill="var(--board-silk)">12V</text>
+  <text x="285" y="268.8" text-anchor="end" font-size="9" fill="var(--board-silk)">B</text>
+  <text x="285" y="299.2" text-anchor="end" font-size="9" fill="var(--board-silk)">A</text>
+  <text x="285" y="345.2" text-anchor="end" font-size="9" fill="var(--board-silk)">G</text>
+  <line x1="310" y1="218.8" x2="452" y2="218.8" stroke="var(--w12)" stroke-width="1" stroke-dasharray="3 3"/>
+  <text x="458" y="222.8" font-size="11.5" fill="var(--ink)">+12 V (15, 22.35)</text>
+  <line x1="310" y1="264.8" x2="452" y2="264.8" stroke="var(--wb)" stroke-width="1" stroke-dasharray="3 3"/>
+  <text x="458" y="268.8" font-size="11.5" fill="var(--ink)">RS-485 B (15, 28.1)</text>
+  <line x1="310" y1="295.2" x2="452" y2="295.2" stroke="var(--wa)" stroke-width="1" stroke-dasharray="3 3"/>
+  <text x="458" y="299.2" font-size="11.5" fill="var(--ink)">RS-485 A (15, 31.9)</text>
+  <line x1="310" y1="341.2" x2="452" y2="341.2" stroke="var(--wgnd)" stroke-width="1" stroke-dasharray="3 3"/>
+  <text x="458" y="345.2" font-size="11.5" fill="var(--ink)">GND (15, 37.65)</text>
+
+  <!-- origin marker -->
+  <circle cx="180" cy="40" r="3" fill="var(--accent)"/>
+  <text x="172" y="32" text-anchor="end" font-size="10.5" fill="var(--accent)">(0, 0)</text>
+  <line x1="180" y1="40" x2="180" y2="20" stroke="var(--muted)" stroke-width="1"/>
+  <line x1="180" y1="40" x2="160" y2="40" stroke="var(--muted)" stroke-width="1"/>
+</svg>
+<figcaption>
+  Seven contacts: two on the UPDI header (data + ground — power comes from the 12&nbsp;V
+  pad instead, so +3V3 is skipped) and the four bus pads. The corner pegs make it
+  impossible to seat the board misaligned; it only drops flat in one position.
+</figcaption>
+</figure>
+
+<h2>Cross-section — through the bus column</h2>
+
+<figure class="figure">
+<svg viewBox="0 0 660 330" width="660" role="img" aria-label="Cross-section of the jig: a base cradle with a perimeter ledge holds the board over a central void; a press head slides down two guide posts, carrying spring pins that compress onto the board; the head stops on post shoulders.">
+  <!-- base plate -->
+  <path d="M 90 260 L 570 260 L 570 300 L 90 300 Z" fill="var(--print)"/>
+  <!-- ledge shoulders -->
+  <rect x="150" y="240" width="40" height="24" fill="var(--print)"/>
+  <rect x="470" y="240" width="40" height="24" fill="var(--print)"/>
+  <!-- void -->
+  <rect x="190" y="264" width="280" height="24" fill="var(--bg)"/>
+  <text x="330" y="281" text-anchor="middle" font-size="10.5" fill="var(--muted)">void — solder tails hang free</text>
+
+  <!-- board -->
+  <rect x="152" y="230" width="356" height="10" fill="var(--board)"/>
+  <text x="118" y="222" font-size="10.5" fill="var(--ink)">board</text>
+  <!-- peg through board -->
+  <rect x="163" y="222" width="8" height="42" rx="2" fill="var(--print2)"/>
+  <rect x="489" y="222" width="8" height="42" rx="2" fill="var(--print2)"/>
+  <text x="167" y="214" text-anchor="middle" font-size="10" fill="var(--muted)">peg</text>
+
+  <!-- guide posts with shoulders -->
+  <g>
+    <rect x="52" y="60" width="16" height="240" fill="var(--print2)"/>
+    <rect x="44" y="196" width="32" height="104" fill="var(--print2)"/>
+    <rect x="592" y="60" width="16" height="240" fill="var(--print2)"/>
+    <rect x="584" y="196" width="32" height="104" fill="var(--print2)"/>
+  </g>
+  <text x="60" y="48" text-anchor="middle" font-size="10.5" fill="var(--muted)">guide post</text>
+  <text x="600" y="48" text-anchor="middle" font-size="10.5" fill="var(--muted)">guide post</text>
+
+  <!-- head -->
+  <rect x="30" y="130" width="600" height="66" rx="4" fill="var(--print)"/>
+  <text x="330" y="158" text-anchor="middle" font-size="12" fill="var(--ink)">press head — slides on posts, lands on shoulders</text>
+  <!-- guide holes shown as gaps -->
+  <rect x="50" y="130" width="20" height="66" fill="var(--print2)" opacity="0.5"/>
+  <rect x="590" y="130" width="20" height="66" fill="var(--print2)" opacity="0.5"/>
+
+  <!-- pogos: 4 through head into board -->
+  <g>
+    <g transform="translate(238,0)"><rect x="-3" y="140" width="6" height="70" fill="var(--w12)"/><path d="M -3 210 L 0 230 L 3 210 Z" fill="var(--w12)"/><circle cx="0" cy="136" r="5" fill="var(--w12)"/></g>
+    <g transform="translate(298,0)"><rect x="-3" y="140" width="6" height="70" fill="var(--wb)"/><path d="M -3 210 L 0 230 L 3 210 Z" fill="var(--wb)"/><circle cx="0" cy="136" r="5" fill="var(--wb)"/></g>
+    <g transform="translate(338,0)"><rect x="-3" y="140" width="6" height="70" fill="var(--wa)"/><path d="M -3 210 L 0 230 L 3 210 Z" fill="var(--wa)"/><circle cx="0" cy="136" r="5" fill="var(--wa)"/></g>
+    <g transform="translate(398,0)"><rect x="-3" y="140" width="6" height="70" fill="var(--wgnd)"/><path d="M -3 210 L 0 230 L 3 210 Z" fill="var(--wgnd)"/><circle cx="0" cy="136" r="5" fill="var(--wgnd)"/></g>
+  </g>
+  <text x="238" y="124" text-anchor="middle" font-size="9.5" fill="var(--w12)">12V</text>
+  <text x="298" y="124" text-anchor="middle" font-size="9.5" fill="var(--wb)">B</text>
+  <text x="338" y="124" text-anchor="middle" font-size="9.5" fill="var(--wa)">A</text>
+  <text x="398" y="124" text-anchor="middle" font-size="9.5" fill="var(--wgnd)">G</text>
+
+  <!-- annotations -->
+  <line x1="510" y1="230" x2="548" y2="230" stroke="var(--muted)" stroke-width="1"/>
+  <text x="536" y="222" font-size="10" fill="var(--muted)">spear tips</text>
+  <text x="536" y="234" font-size="10" fill="var(--muted)" opacity="0">.</text>
+  <text x="330" y="318" text-anchor="middle" font-size="10.5" fill="var(--muted)">head travel stops with pogos compressed ≈1.5 mm — consistent force, no crushing</text>
+</svg>
+<figcaption>
+  Section through the four bus contacts (the UPDI pair sits on a parallel plane nearer
+  the board's top edge). Wire tails solder into counterbores on the head's top face and
+  leave through a channel to one cable loom.
+</figcaption>
+</figure>
+
+<h2>Loom hookup</h2>
+<div class="tablewrap">
+<table>
+  <tr><th>Jig pin</th><th>Wire</th><th>Terminates at</th></tr>
+  <tr><td>UPDI</td><td>white</td><td>UPDI Friend — UPDI</td></tr>
+  <tr><td>UPDI-row GND</td><td rowspan="2">black — join with jig bus GND</td><td>UPDI Friend GND · supply −</td></tr>
+  <tr><td>Bus G</td><td>(shared ground)</td></tr>
+  <tr><td>Bus 12V</td><td>red</td><td>12 V supply +</td></tr>
+  <tr><td>Bus A</td><td>blue</td><td>TTL→RS485 converter <code>A+</code> (on the Pi, per POC guide §6)</td></tr>
+  <tr><td>Bus B</td><td>green</td><td>TTL→RS485 converter <code>B−</code></td></tr>
+</table>
+</div>
+<div class="note">
+  <p><strong>UPDI Friend switch stays on 3V</strong>, and its red power wire stays
+  unconnected — the board powers itself from the 12&nbsp;V pad through its own
+  regulators, exactly as it will in the display.</p>
+</div>
+
+<h2>Per-board cycle (~90 s)</h2>
+<ol>
+  <li>Seat board on the pegs, press the head down, switch 12 V on.</li>
+  <li>Wait ~15 s — with no motor attached, the boot homing attempt runs to its safety limit before the module listens.</li>
+  <li><strong>Flash</strong> — <em>Upload Using Programmer</em> in Arduino IDE (identical binary for every board; ~10 s).</li>
+  <li><strong>Address</strong> — the board is alone on this bus, so broadcast: send <code>m*i7</code> to make it module 7.</li>
+  <li><strong>Verify</strong> — send <code>m7d</code>; a reply (<code>m7d:…</code>) proves both flash and address.</li>
+  <li>12 V off, lift, label the board, next.</li>
+</ol>
+<p>
+  Addresses stick because the firmware writes <code>HARDCODED_ID</code> to EEPROM only on
+  a board's very first boot; after that the EEPROM value always wins, and the
+  <code>i</code> command rewrites it permanently. Set Arduino's
+  <em>Tools&nbsp;→&nbsp;Save&nbsp;EEPROM</em> to <em>retained</em> so future firmware
+  updates keep addresses and calibration too.
+</p>
+
+<footer style="margin-top:70px;padding-top:18px;border-top:1px solid var(--line);font-size:13.5px;color:var(--muted)">
+  Companion files: <code>programming-jig/jig.scad</code> (printable model + pogo-fit test coupon)
+  and <code>programming-jig/README.md</code>. Board data extracted from the V4 KiCad layout.
+</footer>
+</main>
+
+</body>
+</html>
